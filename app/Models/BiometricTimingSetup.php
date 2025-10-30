@@ -25,8 +25,6 @@ class BiometricTimingSetup extends Model
     ];
 
     protected $casts = [
-        'time_start' => 'datetime:H:i:s',
-        'time_end' => 'datetime:H:i:s',
         'grace_period_minutes' => 'integer',
         'attendance_type_id' => 'integer',
         'is_active' => 'boolean',
