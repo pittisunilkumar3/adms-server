@@ -30,21 +30,5 @@ class StaffAttendance extends Model
         'created_at' => 'datetime',
         'updated_at' => 'date',
     ];
-
-    /**
-     * Get the staff that owns the attendance record.
-     */
-    public function staff()
-    {
-        return $this->belongsTo(Staff::class, 'staff_id');
-    }
-
-    /**
-     * Get the attendance type.
-     */
-    public function attendanceType()
-    {
-        return $this->belongsTo(StaffAttendanceType::class, 'staff_attendance_type_id');
-    }
 }
 
