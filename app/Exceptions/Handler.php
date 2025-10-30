@@ -4,9 +4,12 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
-use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+/**
+ * Exception Handler - NO LOGGING
+ * All logging removed
+ * Exceptions are handled silently
+ */
 class Handler extends ExceptionHandler
 {
     /**
@@ -26,23 +29,7 @@ class Handler extends ExceptionHandler
     public function register(): void
     {
         $this->reportable(function (Throwable $e) {
-            //
-        });
-
-        $this->renderable(function (NotFoundHttpException $e, $request) {
-            $requestData = $request->all();
-            
-            // Remove sensitive information
-            foreach ($this->dontFlash as $key) {
-                unset($requestData[$key]);
-            }
-
-            Log::error('404 Not Found: ' . $request->url(), [
-                'method' => $request->method(),
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'request_data' => $requestData
-            ]);
+            // No logging - exceptions handled silently
         });
     }
 }

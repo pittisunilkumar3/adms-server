@@ -2,23 +2,23 @@
 
 use Illuminate\Support\Str;
 
+/**
+ * Session Configuration - SESSIONS DISABLED
+ * Using 'array' driver (in-memory, no persistence)
+ * No storage/ folder required
+ * Sessions don't persist between requests (no authentication needed)
+ */
 return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default Session Driver
+    | Default Session Driver - ARRAY (In-Memory)
     |--------------------------------------------------------------------------
-    |
-    | This option controls the default session "driver" that will be used on
-    | requests. By default, we will use the lightweight native driver but
-    | you may specify any of the other wonderful drivers provided here.
-    |
-    | Supported: "file", "cookie", "database", "apc",
-    |            "memcached", "redis", "dynamodb", "array"
-    |
+    | Using 'array' driver for in-memory sessions
+    | Sessions are not persisted (no authentication in this app)
     */
 
-    'driver' => env('SESSION_DRIVER', 'file'),
+    'driver' => env('SESSION_DRIVER', 'array'),
 
     /*
     |--------------------------------------------------------------------------
@@ -50,16 +50,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Session File Location
+    | Session File Location - NOT USED
     |--------------------------------------------------------------------------
-    |
-    | When using the native session driver, we need a location where session
-    | files may be stored. A default has been set for you but a different
-    | location may be specified. This is only needed for file sessions.
-    |
+    | Not used with 'array' driver (in-memory sessions)
     */
 
-    'files' => storage_path('framework/sessions'),
+    'files' => sys_get_temp_dir(),
 
     /*
     |--------------------------------------------------------------------------

@@ -134,7 +134,7 @@ class AttendanceController extends Controller
                 ->header('Content-Type', 'text/plain');
                 
         } catch (\Throwable $e) {
-            report($e);
+            // No logging - return error response silently
             return response("ERROR: 0\n", 500)
                 ->header('Content-Type', 'text/plain');
         }

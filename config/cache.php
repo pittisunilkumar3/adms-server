@@ -2,20 +2,23 @@
 
 use Illuminate\Support\Str;
 
+/**
+ * Cache Configuration - CACHE DISABLED
+ * Using 'array' driver (in-memory, no persistence)
+ * No storage/ folder required
+ * Cache is cleared on every request
+ */
 return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default Cache Store
+    | Default Cache Store - ARRAY (In-Memory)
     |--------------------------------------------------------------------------
-    |
-    | This option controls the default cache connection that gets used while
-    | using this caching library. This connection is used when another is
-    | not explicitly specified when executing a given caching function.
-    |
+    | Using 'array' driver for in-memory cache
+    | Cache is not persisted (simple attendance queries don't need caching)
     */
 
-    'default' => env('CACHE_DRIVER', 'file'),
+    'default' => env('CACHE_DRIVER', 'array'),
 
     /*
     |--------------------------------------------------------------------------
@@ -51,8 +54,8 @@ return [
 
         'file' => [
             'driver' => 'file',
-            'path' => storage_path('framework/cache/data'),
-            'lock_path' => storage_path('framework/cache/data'),
+            'path' => sys_get_temp_dir(),
+            'lock_path' => sys_get_temp_dir(),
         ],
 
         'memcached' => [
