@@ -9,6 +9,7 @@ use App\Models\Staff;
 use App\Models\Student;
 use App\Models\StaffAttendance;
 use App\Models\StudentAttendance;
+use App\Services\AttendanceTimingService;
 
 /**
  * Consolidated Attendance Controller
@@ -20,6 +21,12 @@ use App\Models\StudentAttendance;
  */
 class AttendanceController extends Controller
 {
+    protected $timingService;
+
+    public function __construct(AttendanceTimingService $timingService)
+    {
+        $this->timingService = $timingService;
+    }
     /**
      * Display attendance records (both staff and students)
      * GET /attendance
@@ -238,7 +245,7 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Insert staff attendance record
+     * Insert staff attendance record with timing range matching
      *
      * @param int $staff_id
      * @param string $date
@@ -248,14 +255,17 @@ class AttendanceController extends Controller
      */
     private function insertStaffAttendance($staff_id, $date, $timestamp, $biometric_device_data)
     {
+        // Process timing to determine attendance type and authorization
+        $timingResult = $this->timingService->processStaffTiming($staff_id, $timestamp);
+
         $attendanceData = [
             'date' => $date,
             'staff_id' => $staff_id,
-            'staff_attendance_type_id' => 1, // 1 = Present
+            'staff_attendance_type_id' => $timingResult['attendance_type_id'],
             'biometric_attendence' => 1,
-            'is_authorized_range' => 1,
+            'is_authorized_range' => $timingResult['is_authorized_range'],
             'biometric_device_data' => $biometric_device_data,
-            'remark' => 'Auto-recorded from biometric device at ' . $timestamp,
+            'remark' => $timingResult['remark'],
             'is_active' => 1,
             'created_at' => Carbon::parse($timestamp),
             'updated_at' => Carbon::parse($timestamp),
@@ -263,11 +273,21 @@ class AttendanceController extends Controller
 
         // Insert new record (allows multiple punches per day)
         DB::table('staff_attendance')->insert($attendanceData);
+
+        // Log timing information for debugging
+        \Log::info("Staff attendance recorded", [
+            'staff_id' => $staff_id,
+            'timestamp' => $timestamp,
+            'attendance_type_id' => $timingResult['attendance_type_id'],
+            'is_authorized_range' => $timingResult['is_authorized_range'],
+            'remark' => $timingResult['remark']
+        ]);
+
         return true;
     }
 
     /**
-     * Insert student attendance record
+     * Insert student attendance record with timing range matching
      *
      * @param int $student_session_id
      * @param string $date
@@ -277,19 +297,32 @@ class AttendanceController extends Controller
      */
     private function insertStudentAttendance($student_session_id, $date, $timestamp, $biometric_device_data)
     {
+        // Process timing to determine attendance type and authorization
+        $timingResult = $this->timingService->processStudentTiming($student_session_id, $timestamp);
+
         $attendanceData = [
             'date' => $date,
             'student_session_id' => $student_session_id,
-            'attendence_type_id' => 1, // 1 = Present
+            'attendence_type_id' => $timingResult['attendance_type_id'],
             'biometric_attendence' => 1,
-            'is_authorized_range' => 1,
+            'is_authorized_range' => $timingResult['is_authorized_range'],
             'biometric_device_data' => $biometric_device_data,
-            'remark' => 'Auto-recorded from biometric device at ' . $timestamp,
+            'remark' => $timingResult['remark'],
             'created_at' => Carbon::parse($timestamp),
         ];
 
         // Insert new record (allows multiple punches per day)
         DB::table('student_attendences')->insert($attendanceData);
+
+        // Log timing information for debugging
+        \Log::info("Student attendance recorded", [
+            'student_session_id' => $student_session_id,
+            'timestamp' => $timestamp,
+            'attendance_type_id' => $timingResult['attendance_type_id'],
+            'is_authorized_range' => $timingResult['is_authorized_range'],
+            'remark' => $timingResult['remark']
+        ]);
+
         return true;
     }
 }
