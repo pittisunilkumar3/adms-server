@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * StaffAttendance Model
+ * Represents staff attendance records
+ */
 class StaffAttendance extends Model
 {
     use HasFactory;
@@ -20,6 +24,8 @@ class StaffAttendance extends Model
         'biometric_device_data',
         'remark',
         'is_active',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
@@ -30,5 +36,45 @@ class StaffAttendance extends Model
         'created_at' => 'datetime',
         'updated_at' => 'date',
     ];
+
+    /**
+     * Get the staff member
+     */
+    public function staff()
+    {
+        return $this->belongsTo(Staff::class, 'staff_id');
+    }
+
+    /**
+     * Check if attendance already exists for staff on a specific date
+     *
+     * @param int $staff_id
+     * @param string $date
+     * @return bool
+     */
+    public static function existsForDate($staff_id, $date)
+    {
+        return self::where('staff_id', $staff_id)
+            ->where('date', $date)
+            ->exists();
+    }
+
+    /**
+     * Create attendance record if it doesn't exist for the date
+     *
+     * @param array $data
+     * @return bool
+     */
+    public static function createIfNotExists($data)
+    {
+        // Check if already exists
+        if (self::existsForDate($data['staff_id'], $data['date'])) {
+            return false;
+        }
+
+        // Create new record
+        self::create($data);
+        return true;
+    }
 }
 
