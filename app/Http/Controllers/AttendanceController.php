@@ -86,12 +86,12 @@ class AttendanceController extends Controller
                     ->header('Content-Type', 'text/plain');
             }
 
-            // Process attendance records
+            // Process attendance records - INSERT NEW RECORD FOR EACH PUNCH
             foreach ($arr as $rey) {
                 if (empty($rey)) {
                     continue;
                 }
-                
+
                 $data = explode("\t", $rey);
                 $timestamp = $data[1];
                 $date = Carbon::parse($timestamp)->format('Y-m-d');
@@ -116,16 +116,14 @@ class AttendanceController extends Controller
                     'biometric_attendence' => 1,
                     'is_authorized_range' => 1,
                     'biometric_device_data' => $biometric_device_data,
-                    'remark' => 'Auto-recorded from biometric device',
+                    'remark' => 'Auto-recorded from biometric device at ' . $timestamp,
                     'is_active' => 1,
-                    'created_at' => now(),
-                    'updated_at' => now()->format('Y-m-d'),
+                    'created_at' => Carbon::parse($timestamp),
+                    'updated_at' => Carbon::parse($timestamp),
                 ];
 
-                DB::table('staff_attendance')->updateOrInsert(
-                    ['staff_id' => $staff_id, 'date' => $date],
-                    $attendanceData
-                );
+                // INSERT new record for each punch (allows multiple records per day)
+                DB::table('staff_attendance')->insert($attendanceData);
 
                 $tot++;
             }
