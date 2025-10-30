@@ -240,6 +240,7 @@ class AttendanceController extends Controller
 
     /**
      * Insert staff attendance record
+     * Validates punch time against assigned time range
      * Prevents duplicates based on staff_id, date, and time_range_id
      *
      * @param int $staff_id
@@ -250,44 +251,51 @@ class AttendanceController extends Controller
      */
     private function insertStaffAttendance($staff_id, $date, $timestamp, $biometric_device_data)
     {
-        // Check if staff has an assigned time range
-        $assignedTimeRange = DB::table('staff_time_range_assignments')
-            ->where('staff_id', $staff_id)
-            ->where('is_active', 1)
+        $punchTime = Carbon::parse($timestamp)->format('H:i:s');
+
+        // OPTIMIZED: Use single SQL query to find matching time range from assigned ranges
+        // This filters at database level instead of looping in PHP
+        $matchedTimeRange = DB::table('staff_time_range_assignments as stra')
+            ->join('biometric_timing_setup as bts', 'stra.time_range_id', '=', 'bts.id')
+            ->where('stra.staff_id', $staff_id)
+            ->where('stra.is_active', 1)
+            ->where('bts.is_active', 1)
+            ->whereRaw('? BETWEEN bts.time_start AND bts.time_end', [$punchTime])
+            ->orderBy('bts.priority', 'asc')
+            ->select('bts.*')
             ->first();
 
-        // Find matching time range for this punch
+        $timeRange = null;
         $timeRangeId = null;
         $checkInTime = null;
         $checkOutTime = null;
+        $isAuthorizedRange = 0; // Default to unauthorized
 
-        if ($assignedTimeRange) {
-            // Use the assigned time range
-            $timeRange = BiometricTimingSetup::find($assignedTimeRange->time_range_id);
-            if ($timeRange && $timeRange->is_active) {
-                $timeRangeId = $timeRange->id;
-
-                // Set check-in or check-out time based on range type
-                if ($timeRange->range_type === 'checkin') {
-                    $checkInTime = $timeRange->time_start;
-                } elseif ($timeRange->range_type === 'checkout') {
-                    $checkOutTime = $timeRange->time_end;
-                }
-            }
-        } else {
-            // No assigned range, find matching range based on punch time
-            $timeRange = BiometricTimingSetup::findMatchingRange($timestamp);
-            if ($timeRange) {
-                $timeRangeId = $timeRange->id;
-
-                // Set check-in or check-out time based on range type
-                if ($timeRange->range_type === 'checkin') {
-                    $checkInTime = $timeRange->time_start;
-                } elseif ($timeRange->range_type === 'checkout') {
-                    $checkOutTime = $timeRange->time_end;
-                }
-            }
+        // If no matching assigned time range found, do nothing (reject silently)
+        if (!$matchedTimeRange) {
+            return false;
         }
+
+        // Punch matched one of the assigned time ranges - AUTHORIZED
+        $timeRange = $matchedTimeRange;
+        $timeRangeId = $timeRange->id;
+        $isAuthorizedRange = 1;
+
+        // Set check-in or check-out time based on range type
+        if ($timeRange->range_type === 'checkin') {
+            $checkInTime = $timeRange->time_start;
+        } elseif ($timeRange->range_type === 'checkout') {
+            $checkOutTime = $timeRange->time_end;
+        }
+
+        \Log::info("Staff punch matched assigned time range", [
+            'staff_id' => $staff_id,
+            'punch_time' => $punchTime,
+            'matched_range' => $timeRange->range_name,
+            'range_start' => $timeRange->time_start,
+            'range_end' => $timeRange->time_end,
+            'priority' => $timeRange->priority
+        ]);
 
         // Check for duplicate: same staff_id, date, and time_range_id
         $existingRecord = DB::table('staff_attendance')
@@ -312,7 +320,7 @@ class AttendanceController extends Controller
             'staff_id' => $staff_id,
             'staff_attendance_type_id' => 1, // 1 = Present
             'biometric_attendence' => 1,
-            'is_authorized_range' => 1,
+            'is_authorized_range' => $isAuthorizedRange,
             'time_range_id' => $timeRangeId,
             'check_in_time' => $checkInTime,
             'check_out_time' => $checkOutTime,
@@ -323,13 +331,23 @@ class AttendanceController extends Controller
             'updated_at' => Carbon::parse($timestamp),
         ];
 
-        // Insert new record (prevents duplicates based on date and time_range_id)
+        // Insert new record
         DB::table('staff_attendance')->insert($attendanceData);
+
+        \Log::info("Staff attendance recorded successfully", [
+            'staff_id' => $staff_id,
+            'date' => $date,
+            'time_range_id' => $timeRangeId,
+            'is_authorized_range' => $isAuthorizedRange,
+            'timestamp' => $timestamp
+        ]);
+
         return true;
     }
 
     /**
      * Insert student attendance record
+     * Validates punch time against assigned time range
      * Prevents duplicates based on student_session_id, date, and time_range_id
      *
      * @param int $student_session_id
@@ -340,44 +358,51 @@ class AttendanceController extends Controller
      */
     private function insertStudentAttendance($student_session_id, $date, $timestamp, $biometric_device_data)
     {
-        // Check if student has an assigned time range
-        $assignedTimeRange = DB::table('student_time_range_assignments')
-            ->where('student_session_id', $student_session_id)
-            ->where('is_active', 1)
+        $punchTime = Carbon::parse($timestamp)->format('H:i:s');
+
+        // OPTIMIZED: Use single SQL query to find matching time range from assigned ranges
+        // This filters at database level instead of looping in PHP
+        $matchedTimeRange = DB::table('student_time_range_assignments as stra')
+            ->join('biometric_timing_setup as bts', 'stra.time_range_id', '=', 'bts.id')
+            ->where('stra.student_session_id', $student_session_id)
+            ->where('stra.is_active', 1)
+            ->where('bts.is_active', 1)
+            ->whereRaw('? BETWEEN bts.time_start AND bts.time_end', [$punchTime])
+            ->orderBy('bts.priority', 'asc')
+            ->select('bts.*')
             ->first();
 
-        // Find matching time range for this punch
+        $timeRange = null;
         $timeRangeId = null;
         $checkInTime = null;
         $checkOutTime = null;
+        $isAuthorizedRange = 0; // Default to unauthorized
 
-        if ($assignedTimeRange) {
-            // Use the assigned time range
-            $timeRange = BiometricTimingSetup::find($assignedTimeRange->time_range_id);
-            if ($timeRange && $timeRange->is_active) {
-                $timeRangeId = $timeRange->id;
-
-                // Set check-in or check-out time based on range type
-                if ($timeRange->range_type === 'checkin') {
-                    $checkInTime = $timeRange->time_start;
-                } elseif ($timeRange->range_type === 'checkout') {
-                    $checkOutTime = $timeRange->time_end;
-                }
-            }
-        } else {
-            // No assigned range, find matching range based on punch time
-            $timeRange = BiometricTimingSetup::findMatchingRange($timestamp);
-            if ($timeRange) {
-                $timeRangeId = $timeRange->id;
-
-                // Set check-in or check-out time based on range type
-                if ($timeRange->range_type === 'checkin') {
-                    $checkInTime = $timeRange->time_start;
-                } elseif ($timeRange->range_type === 'checkout') {
-                    $checkOutTime = $timeRange->time_end;
-                }
-            }
+        // If no matching assigned time range found, do nothing (reject silently)
+        if (!$matchedTimeRange) {
+            return false;
         }
+
+        // Punch matched one of the assigned time ranges - AUTHORIZED
+        $timeRange = $matchedTimeRange;
+        $timeRangeId = $timeRange->id;
+        $isAuthorizedRange = 1;
+
+        // Set check-in or check-out time based on range type
+        if ($timeRange->range_type === 'checkin') {
+            $checkInTime = $timeRange->time_start;
+        } elseif ($timeRange->range_type === 'checkout') {
+            $checkOutTime = $timeRange->time_end;
+        }
+
+        \Log::info("Student punch matched assigned time range", [
+            'student_session_id' => $student_session_id,
+            'punch_time' => $punchTime,
+            'matched_range' => $timeRange->range_name,
+            'range_start' => $timeRange->time_start,
+            'range_end' => $timeRange->time_end,
+            'priority' => $timeRange->priority
+        ]);
 
         // Check for duplicate: same student_session_id, date, and time_range_id
         $existingRecord = DB::table('student_attendences')
@@ -402,7 +427,7 @@ class AttendanceController extends Controller
             'student_session_id' => $student_session_id,
             'attendence_type_id' => 1, // 1 = Present
             'biometric_attendence' => 1,
-            'is_authorized_range' => 1,
+            'is_authorized_range' => $isAuthorizedRange,
             'time_range_id' => $timeRangeId,
             'check_in_time' => $checkInTime,
             'check_out_time' => $checkOutTime,
@@ -411,8 +436,17 @@ class AttendanceController extends Controller
             'created_at' => Carbon::parse($timestamp),
         ];
 
-        // Insert new record (prevents duplicates based on date and time_range_id)
+        // Insert new record
         DB::table('student_attendences')->insert($attendanceData);
+
+        \Log::info("Student attendance recorded successfully", [
+            'student_session_id' => $student_session_id,
+            'date' => $date,
+            'time_range_id' => $timeRangeId,
+            'is_authorized_range' => $isAuthorizedRange,
+            'timestamp' => $timestamp
+        ]);
+
         return true;
     }
 }
