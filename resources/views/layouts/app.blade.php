@@ -11,7 +11,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
-            <a class="navbar-brand" href="{{ route('devices.Attendance') }}">Attendance System</a>
+            <a class="navbar-brand" href="{{ route('attendance.index') }}">Attendance System</a>
             <span class="navbar-text ms-auto">
                 {{ now()->format('Y-m-d H:i:s') }}
             </span>
