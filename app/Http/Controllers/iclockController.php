@@ -18,20 +18,6 @@ class iclockController extends Controller
     // handshake
 public function handshake(Request $request)
 {
-    $data = [
-        'url' => json_encode($request->all()),
-        'data' => $request->getContent(),
-        'sn' => $request->input('SN'),
-        'option' => $request->input('option'),
-    ];
-    DB::table('device_log')->insert($data);
-
-    // update status device
-    DB::table('devices')->updateOrInsert(
-        ['no_sn' => $request->input('SN')],
-        ['online' => now()]
-    );
-
     $r = "GET OPTION FROM: {$request->input('SN')}\r\n" .
          "Stamp=9999\r\n" .
          "OpStamp=" . time() . "\r\n" .
@@ -43,7 +29,6 @@ public function handshake(Request $request)
          "TransTimes=00:00;14:05\r\n" .
          "TransInterval=1\r\n" .
          "TransFlag=1111000000\r\n" .
-        //  "TimeZone=7\r\n" .
          "Realtime=1\r\n" .
          "Encrypt=0";
 
@@ -55,11 +40,6 @@ public function handshake(Request $request)
     // request absensi
     public function receiveRecords(Request $request)
     {
-
-        //DB::connection()->enableQueryLog();
-        $content['url'] = json_encode($request->all());
-        $content['data'] = $request->getContent();;
-        DB::table('finger_log')->insert($content);
         try {
             // $post_content = $request->getContent();
             //$arr = explode("\n", $post_content);
@@ -133,26 +113,11 @@ public function handshake(Request $request)
             }
             return "OK: ".$tot;
         } catch (\Throwable $e) {
-            $data['error'] = $e->getMessage();
-            DB::table('error_log')->insert($data);
             report($e);
             return "ERROR: ".$tot."\n";
         }
     }
 
-    public function test(Request $request)
-    {
-                $log['data'] = $request->getContent();
-                DB::table('finger_log')->insert($log);
-    }
-
-    public function getrequest(Request $request)
-    {
-        // $r = "GET OPTION FROM: ".$request->SN."\nStamp=".strtotime('now')."\nOpStamp=".strtotime('now')."\nErrorDelay=60\nDelay=30\nResLogDay=18250\nResLogDelCount=10000\nResLogCount=50000\nTransTimes=00:00;14:05\nTransInterval=1\nTransFlag=1111000000\nRealtime=1\nEncrypt=0";
-
-        return "OK";
-    }
-    
     private function validateAndFormatInteger($value)
     {
         return isset($value) && $value !== '' ? (int)$value : null;

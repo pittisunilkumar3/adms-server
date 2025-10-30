@@ -1,21 +1,20 @@
-# ADMS (Attendance Device Management System)
+# Attendance System
 
-ADMS is a comprehensive Attendance Device Management System designed to handle biometric and access control data from various devices. This system is built using Laravel, a PHP framework, provides functionalities to store, manage user and fingerprint data.
+A simplified attendance recording system designed to receive and store attendance data from biometric devices. This system is built using Laravel and focuses solely on attendance functionality.
 
 ## Features
 
-- Fingerprint data storage
-- Device status monitoring
+- Receive attendance data from biometric devices (ZKTeco protocol)
+- Store attendance records in database
+- View attendance records through web interface
+- Automatic device handshake handling
 
-## Screenshots
-Device Connected
-![App Screenshot](https://github.com/saifulcoder/adms-server-ZKTeco/blob/main/Screenshot_7.png)
-Attendance Recorded
-![App Screenshot](https://github.com/saifulcoder/adms-server-ZKTeco/blob/main/Screenshot_8.png)
-Device Log
-![App Screenshot](https://github.com/saifulcoder/adms-server-ZKTeco/blob/main/Screenshot_9.png)
-Attendence Log
-![App Screenshot](https://github.com/saifulcoder/adms-server-ZKTeco/blob/main/Screenshot_10.png)
+## How It Works
+
+1. **Device Handshake**: Biometric devices connect to the server via `/iclock/cdata` endpoint
+2. **Data Reception**: Attendance data is sent from devices to the server
+3. **Data Storage**: Attendance records are stored in the `staff_attendance` table
+4. **Web Interface**: View all attendance records at `/attendance`
 
 ## Installation
 
@@ -32,8 +31,8 @@ Before you begin, ensure you have the following installed on your system:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/saifulcoder/adms-server-ZKTeco.git adms-server
-   cd adms-server
+   git clone https://github.com/saifulcoder/adms-server-ZKTeco.git attendance-system
+   cd attendance-system
    ```
 
 2. **Install dependencies**
@@ -52,12 +51,12 @@ Before you begin, ensure you have the following installed on your system:
    ```
 
 5. **Configure the `.env` file**
-   Open the `.env` file and set your database credentials and other environment variables:
+   Open the `.env` file and set your database credentials:
    ```env
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
    DB_PORT=3306
-   DB_DATABASE=adms
+   DB_DATABASE=attendance_db
    DB_USERNAME=root
    DB_PASSWORD=
    ```
@@ -66,20 +65,36 @@ Before you begin, ensure you have the following installed on your system:
    ```bash
    php artisan migrate
    ```
+   This will create the `staff_attendance` table.
 
 7. **Serve the application**
    ```bash
    php artisan serve
    ```
 
-### Monitoring Device Status
+8. **Access the application**
+   - Web Interface: `http://localhost:8000/attendance`
+   - Device Endpoint: `http://localhost:8000/iclock/cdata`
 
-You can monitor the status of devices by querying the `devices` table where the `online` field indicates the last time the device was online.
+## Device Configuration
 
-## Postman Collection
+Configure your biometric device to connect to:
+- **Server URL**: `http://your-server-ip:8000/iclock/cdata`
+- **Protocol**: ZKTeco Push Protocol
 
-For testing and interacting with the API endpoints, you can use the provided Postman collection:
-[Postman Collection](https://github.com/saifulcoder/adms-server-ZKTeco/blob/main/ADMS server ZKTeco.postman_collection.json)
+## Database Structure
+
+The system uses a single table `staff_attendance` with the following fields:
+- `id`: Primary key
+- `date`: Attendance date
+- `staff_id`: Employee/Staff ID from biometric device
+- `staff_attendance_type_id`: Type of attendance (default: 1)
+- `biometric_attendence`: Boolean flag for biometric attendance
+- `is_authorized_range`: Authorization status
+- `biometric_device_data`: JSON data from device
+- `remark`: Additional notes
+- `is_active`: Active status
+- `created_at`, `updated_at`: Timestamps
 
 
 ## Authors

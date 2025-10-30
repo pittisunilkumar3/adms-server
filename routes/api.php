@@ -1,8 +1,6 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\iclockController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,15 +12,6 @@ use App\Http\Controllers\iclockController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-// // handshake
-// Route::get('/iclock/cdata', [iclockController::class, 'handshake']);
-// // request dari device
-// Route::post('/iclock/cdata', [iclockController::class, 'receiveRecords']);
 
-// Route::get('/iclock/test', [iclockController::class, 'test']);
-// Route::get('/iclock/getrequest', [iclockController::class, 'getrequest']);
-
-
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// No API routes defined for attendance system
+// All device communication happens via web routes at /iclock/cdata

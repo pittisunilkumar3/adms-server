@@ -13,26 +13,16 @@ use Illuminate\Support\Facades\Route;
 |
 */
 use App\Http\Controllers\DeviceController;
-use App\Http\Controllers\AbsensiSholatController;
 use App\Http\Controllers\iclockController;
 
-
-Route::get('devices', [DeviceController::class, 'Index'])->name('devices.index');
-Route::get('devices-log', [DeviceController::class, 'DeviceLog'])->name('devices.DeviceLog');
-Route::get('finger-log', [DeviceController::class, 'FingerLog'])->name('devices.FingerLog');
+// Attendance UI
 Route::get('attendance', [DeviceController::class, 'Attendance'])->name('devices.Attendance');
 
-
-// handshake
+// Device communication endpoints
 Route::get('/iclock/cdata', [iclockController::class, 'handshake']);
-// request dari device
 Route::post('/iclock/cdata', [iclockController::class, 'receiveRecords']);
 
-Route::get('/iclock/test', [iclockController::class, 'test']);
-Route::get('/iclock/getrequest', [iclockController::class, 'getrequest']);
-
-
-
+// Root redirect
 Route::get('/', function () {
-    return redirect('devices') ;
+    return redirect('attendance');
 });

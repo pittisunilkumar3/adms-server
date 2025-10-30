@@ -12,8 +12,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            JadwalSholatSeeder::class,
-        ]);
+        // No seeders defined for attendance system
+        // Attendance data comes from biometric devices
     }
 }
