@@ -1,28 +1,26 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AttendanceController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Attendance System Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
+| Simple routes for biometric attendance system:
+| - View attendance records
+| - Device handshake and data reception
+|--------------------------------------------------------------------------
 */
-use App\Http\Controllers\DeviceController;
-use App\Http\Controllers\iclockController;
 
-// Attendance UI
-Route::get('attendance', [DeviceController::class, 'Attendance'])->name('devices.Attendance');
+// View attendance records
+Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
 
-// Device communication endpoints
-Route::get('/iclock/cdata', [iclockController::class, 'handshake']);
-Route::post('/iclock/cdata', [iclockController::class, 'receiveRecords']);
+// Device communication endpoints (no middleware, no authentication)
+Route::get('/iclock/cdata', [AttendanceController::class, 'handshake']);
+Route::post('/iclock/cdata', [AttendanceController::class, 'store']);
 
 // Root redirect
 Route::get('/', function () {
-    return redirect('attendance');
+    return redirect('/attendance');
 });

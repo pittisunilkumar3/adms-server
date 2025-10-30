@@ -4,56 +4,37 @@ namespace App\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
+/**
+ * Minimal HTTP Kernel - No Middleware
+ * All middleware removed for simplest attendance system
+ * Biometric devices can post data without any authentication or CSRF checks
+ */
 class Kernel extends HttpKernel
 {
     /**
      * The application's global HTTP middleware stack.
-     *
-     * These middleware are run during every request to your application.
+     * EMPTY - No global middleware
      *
      * @var array<int, class-string|string>
      */
-    protected $middleware = [
-        \App\Http\Middleware\TrustProxies::class,
-        \Illuminate\Http\Middleware\HandleCors::class,
-        \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
-        \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
-        \App\Http\Middleware\TrimStrings::class,
-        \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
-    ];
+    protected $middleware = [];
 
     /**
      * The application's route middleware groups.
+     * EMPTY - No middleware groups
      *
      * @var array<string, array<int, class-string|string>>
      */
     protected $middlewareGroups = [
-        'web' => [
-            \App\Http\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \App\Http\Middleware\VerifyCsrfToken::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        ],
-
-        'api' => [
-            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        ],
+        'web' => [],
+        'api' => [],
     ];
 
     /**
      * The application's middleware aliases.
-     *
-     * Aliases may be used instead of class names to conveniently assign middleware to routes and groups.
+     * EMPTY - No middleware aliases
      *
      * @var array<string, class-string|string>
      */
-    protected $middlewareAliases = [
-        'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
-        'precognitive' => \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
-        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-    ];
+    protected $middlewareAliases = [];
 }

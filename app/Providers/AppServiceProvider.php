@@ -3,8 +3,12 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Pagination\Paginator; 
+use Illuminate\Pagination\Paginator;
 
+/**
+ * Minimal App Service Provider
+ * Only configures Bootstrap pagination for attendance view
+ */
 class AppServiceProvider extends ServiceProvider
 {
     /**
