@@ -3,17 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Carbon\Carbon;
 
 /**
  * BiometricTimingSetup Model
- * Represents timing ranges for biometric attendance
+ * Represents biometric timing ranges for check-in and check-out
  */
 class BiometricTimingSetup extends Model
 {
-    use HasFactory;
-
     protected $table = 'biometric_timing_setup';
 
     protected $fillable = [
@@ -37,126 +34,99 @@ class BiometricTimingSetup extends Model
     ];
 
     /**
-     * Get all active timing ranges ordered by priority
+     * Find the matching time range for a given timestamp
+     * 
+     * @param string $timestamp The punch timestamp (e.g., '2025-10-30 09:15:00')
+     * @param int|null $assignedTimeRangeId Optional: specific time range ID assigned to user
+     * @return BiometricTimingSetup|null
      */
-    public static function getActiveRanges()
+    public static function findMatchingRange($timestamp, $assignedTimeRangeId = null)
+    {
+        $punchTime = Carbon::parse($timestamp)->format('H:i:s');
+        
+        $query = self::where('is_active', 1);
+        
+        // If a specific time range is assigned to the user, use only that range
+        if ($assignedTimeRangeId) {
+            $query->where('id', $assignedTimeRangeId);
+        }
+        
+        // Find ranges where punch time falls within time_start and time_end
+        $query->where(function($q) use ($punchTime) {
+            $q->whereRaw('? BETWEEN time_start AND time_end', [$punchTime]);
+        });
+        
+        // Order by priority (lower number = higher priority)
+        $query->orderBy('priority', 'asc');
+        
+        return $query->first();
+    }
+
+    /**
+     * Get all active check-in ranges
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public static function getActiveCheckInRanges()
     {
         return self::where('is_active', 1)
+            ->where('range_type', 'checkin')
             ->orderBy('priority', 'asc')
-            ->orderBy('time_start', 'asc')
             ->get();
     }
 
     /**
-     * Find matching timing range for a given timestamp
+     * Get all active check-out ranges
      * 
-     * @param string $timestamp The punch timestamp
-     * @param array $assignedRangeIds Array of timing range IDs assigned to the user
-     * @return array|null Returns timing info or null if no match
+     * @return \Illuminate\Database\Eloquent\Collection
      */
-    public static function findMatchingRange($timestamp, $assignedRangeIds = [])
+    public static function getActiveCheckOutRanges()
     {
-        $punchTime = Carbon::parse($timestamp);
-        $timeOnly = $punchTime->format('H:i:s');
-        
-        // Get active ranges, filtered by assigned ranges if provided
-        $query = self::where('is_active', 1);
-        
-        if (!empty($assignedRangeIds)) {
-            $query->whereIn('id', $assignedRangeIds);
-        }
-        
-        $ranges = $query->orderBy('priority', 'asc')
-                       ->orderBy('time_start', 'asc')
-                       ->get();
-
-        foreach ($ranges as $range) {
-            $startTime = $range->time_start;
-            $endTime = $range->time_end;
-            
-            // Handle overnight ranges (e.g., 22:00 - 06:00)
-            if ($startTime > $endTime) {
-                // Check if time is after start time OR before end time
-                if ($timeOnly >= $startTime || $timeOnly <= $endTime) {
-                    return self::calculateTimingResult($range, $punchTime, $timeOnly);
-                }
-            } else {
-                // Normal range (e.g., 09:00 - 17:00)
-                if ($timeOnly >= $startTime && $timeOnly <= $endTime) {
-                    return self::calculateTimingResult($range, $punchTime, $timeOnly);
-                }
-            }
-        }
-
-        return null; // No matching range found
+        return self::where('is_active', 1)
+            ->where('range_type', 'checkout')
+            ->orderBy('priority', 'asc')
+            ->get();
     }
 
     /**
-     * Calculate timing result (on-time, late, etc.)
+     * Check if a punch time is within this range
+     * 
+     * @param string $punchTime Time in H:i:s format
+     * @return bool
      */
-    private static function calculateTimingResult($range, $punchTime, $timeOnly)
+    public function isTimeInRange($punchTime)
     {
-        $startTime = $range->time_start;
-        $gracePeriod = $range->grace_period_minutes;
+        $punch = Carbon::parse($punchTime);
+        $start = Carbon::parse($this->time_start);
+        $end = Carbon::parse($this->time_end);
         
-        // Calculate grace period end time
-        $graceEndTime = Carbon::createFromFormat('H:i:s', $startTime)
-            ->addMinutes($gracePeriod)
-            ->format('H:i:s');
-        
-        $isLate = false;
-        $minutesLate = 0;
-        $remark = '';
-        
-        if ($range->range_type === 'checkin') {
-            if ($timeOnly > $graceEndTime) {
-                $isLate = true;
-                $punchCarbon = Carbon::createFromFormat('H:i:s', $timeOnly);
-                $graceCarbon = Carbon::createFromFormat('H:i:s', $graceEndTime);
-                $minutesLate = $punchCarbon->diffInMinutes($graceCarbon);
-                $remark = "Late by {$minutesLate} minutes";
-            } else {
-                $remark = "On-time check-in";
-            }
-        } else {
-            $remark = "Check-out recorded";
+        return $punch->between($start, $end);
+    }
+
+    /**
+     * Get the check-in time for this range
+     * 
+     * @return string|null
+     */
+    public function getCheckInTime()
+    {
+        if ($this->range_type === 'checkin') {
+            return $this->time_start;
         }
-
-        return [
-            'range' => $range,
-            'attendance_type_id' => $range->attendance_type_id,
-            'is_authorized' => true,
-            'is_late' => $isLate,
-            'minutes_late' => $minutesLate,
-            'remark' => $remark,
-            'range_name' => $range->range_name,
-            'range_type' => $range->range_type,
-        ];
+        return null;
     }
 
     /**
-     * Get timing ranges assigned to a staff member
+     * Get the check-out time for this range
+     * 
+     * @return string|null
      */
-    public static function getStaffAssignedRanges($staffId)
+    public function getCheckOutTime()
     {
-        return self::join('staff_time_range_assignments', 'biometric_timing_setup.id', '=', 'staff_time_range_assignments.time_range_id')
-            ->where('staff_time_range_assignments.staff_id', $staffId)
-            ->where('staff_time_range_assignments.is_active', 1)
-            ->where('biometric_timing_setup.is_active', 1)
-            ->pluck('biometric_timing_setup.id')
-            ->toArray();
-    }
-
-    /**
-     * Get timing ranges assigned to a student
-     */
-    public static function getStudentAssignedRanges($studentSessionId)
-    {
-        return self::join('student_time_range_assignments', 'biometric_timing_setup.id', '=', 'student_time_range_assignments.time_range_id')
-            ->where('student_time_range_assignments.student_session_id', $studentSessionId)
-            ->where('student_time_range_assignments.is_active', 1)
-            ->where('biometric_timing_setup.is_active', 1)
-            ->pluck('biometric_timing_setup.id')
-            ->toArray();
+        if ($this->range_type === 'checkout') {
+            return $this->time_end;
+        }
+        return null;
     }
 }
+

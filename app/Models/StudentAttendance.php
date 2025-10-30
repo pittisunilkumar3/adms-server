@@ -19,6 +19,9 @@ class StudentAttendance extends Model
         'attendence_type_id',
         'biometric_attendence',
         'is_authorized_range',
+        'time_range_id',
+        'check_in_time',
+        'check_out_time',
         'biometric_device_data',
         'remark',
         'created_at',
@@ -32,6 +35,14 @@ class StudentAttendance extends Model
     public function studentSession()
     {
         return $this->belongsTo(StudentSession::class, 'student_session_id');
+    }
+
+    /**
+     * Get the time range
+     */
+    public function timeRange()
+    {
+        return $this->belongsTo(BiometricTimingSetup::class, 'time_range_id');
     }
 
     /**
