@@ -240,6 +240,7 @@ class AttendanceController extends Controller
 
     /**
      * Insert staff attendance record
+     * Prevents duplicates based on staff_id, date, and time_range_id
      *
      * @param int $staff_id
      * @param string $date
@@ -288,6 +289,24 @@ class AttendanceController extends Controller
             }
         }
 
+        // Check for duplicate: same staff_id, date, and time_range_id
+        $existingRecord = DB::table('staff_attendance')
+            ->where('staff_id', $staff_id)
+            ->where('date', $date)
+            ->where('time_range_id', $timeRangeId)
+            ->first();
+
+        // If duplicate exists, skip insertion
+        if ($existingRecord) {
+            \Log::info("Duplicate staff attendance skipped", [
+                'staff_id' => $staff_id,
+                'date' => $date,
+                'time_range_id' => $timeRangeId,
+                'timestamp' => $timestamp
+            ]);
+            return false;
+        }
+
         $attendanceData = [
             'date' => $date,
             'staff_id' => $staff_id,
@@ -304,13 +323,14 @@ class AttendanceController extends Controller
             'updated_at' => Carbon::parse($timestamp),
         ];
 
-        // Insert new record (allows multiple punches per day)
+        // Insert new record (prevents duplicates based on date and time_range_id)
         DB::table('staff_attendance')->insert($attendanceData);
         return true;
     }
 
     /**
      * Insert student attendance record
+     * Prevents duplicates based on student_session_id, date, and time_range_id
      *
      * @param int $student_session_id
      * @param string $date
@@ -359,6 +379,24 @@ class AttendanceController extends Controller
             }
         }
 
+        // Check for duplicate: same student_session_id, date, and time_range_id
+        $existingRecord = DB::table('student_attendences')
+            ->where('student_session_id', $student_session_id)
+            ->where('date', $date)
+            ->where('time_range_id', $timeRangeId)
+            ->first();
+
+        // If duplicate exists, skip insertion
+        if ($existingRecord) {
+            \Log::info("Duplicate student attendance skipped", [
+                'student_session_id' => $student_session_id,
+                'date' => $date,
+                'time_range_id' => $timeRangeId,
+                'timestamp' => $timestamp
+            ]);
+            return false;
+        }
+
         $attendanceData = [
             'date' => $date,
             'student_session_id' => $student_session_id,
@@ -373,7 +411,7 @@ class AttendanceController extends Controller
             'created_at' => Carbon::parse($timestamp),
         ];
 
-        // Insert new record (allows multiple punches per day)
+        // Insert new record (prevents duplicates based on date and time_range_id)
         DB::table('student_attendences')->insert($attendanceData);
         return true;
     }
