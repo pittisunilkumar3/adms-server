@@ -72,11 +72,11 @@ class AttendanceController extends Controller
     /**
      * Device handshake endpoint
      * Responds to biometric device connection requests
-     * GET /iclock/cdata
+      * GET /iclock/cdata
+     * EXPLICIT CONTROL: TimeZone=330 sent ONLY when ZKTECO_AUTO_SYNC_TIME=true in .env   
      */
-     * EXPLICIT CONTROL: TimeZone=330 sent ONLY when ZKTECO_AUTO_SYNC_TIME=true in .env    77
-    (Request $request)
-    {
+    public function handshake(Request $request)
+            {
         $response = "GET OPTION FROM: {$request->input('SN')}\r\n" .
                     "Stamp=9999\r\n" .
                     "OpStamp=" . time() . "\r\n" .
