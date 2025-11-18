@@ -450,17 +450,18 @@ class AttendanceController extends Controller
 
         return true;
     }
-}
+
 
     /**
      * Check if device time sync is enabled - EXPLICIT CONTROL
      * Default: false (disabled) - sync only when explicitly enabled
      * Prevents automatic time changes on device connection
      */
-    public function shouldSyncDeviceTime()
+    private function shouldSyncDeviceTime()
     {
         $syncEnabled = env('ZKTECO_AUTO_SYNC_TIME', false);
         \Log::debug('Device time sync check', ['enabled' => $syncEnabled]);
         return (bool)$syncEnabled;
     }
 
+}
