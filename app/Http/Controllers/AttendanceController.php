@@ -74,6 +74,7 @@ class AttendanceController extends Controller
      * Responds to biometric device connection requests
      * GET /iclock/cdata
      */
+     * IMPORTANT: TimeZone=330 minutes for IST (UTC+5:30) to sync device time with server
     public function handshake(Request $request)
     {
         $response = "GET OPTION FROM: {$request->input('SN')}\r\n" .
@@ -88,7 +89,8 @@ class AttendanceController extends Controller
                     "TransInterval=1\r\n" .
                     "TransFlag=1111000000\r\n" .
                     "Realtime=1\r\n" .
-                    "Encrypt=0";
+                    "Encrypt=0" .
+            "TimeZone=330\r\n";
 
         return response($response, 200)
             ->header('Content-Type', 'text/plain');
