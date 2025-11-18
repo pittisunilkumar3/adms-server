@@ -74,8 +74,8 @@ class AttendanceController extends Controller
      * Responds to biometric device connection requests
      * GET /iclock/cdata
      */
-     * IMPORTANT: TimeZone=330 minutes for IST (UTC+5:30) to sync device time with server
-    public function handshake(Request $request)
+     * EXPLICIT CONTROL: TimeZone=330 sent ONLY when ZKTECO_AUTO_SYNC_TIME=true in .env    77
+    (Request $request)
     {
         $response = "GET OPTION FROM: {$request->input('SN')}\r\n" .
                     "Stamp=9999\r\n" .
@@ -89,9 +89,8 @@ class AttendanceController extends Controller
                     "TransInterval=1\r\n" .
                     "TransFlag=1111000000\r\n" .
                     "Realtime=1\r\n" .
-                    "Encrypt=0" .
-            "TimeZone=330\r\n";
-
+"Encrypt=0" .
+            ($this->shouldSyncDeviceTime() ? "TimeZone=330\r\n" : "");
         return response($response, 200)
             ->header('Content-Type', 'text/plain');
     }
@@ -452,4 +451,16 @@ class AttendanceController extends Controller
         return true;
     }
 }
+
+    /**
+     * Check if device time sync is enabled - EXPLICIT CONTROL
+     * Default: false (disabled) - sync only when explicitly enabled
+     * Prevents automatic time changes on device connection
+     */
+    private function shouldSyncDeviceTime()
+    {
+        $syncEnabled = env('ZKTECO_AUTO_SYNC_TIME', false);
+        \Log::debug('Device time sync check', ['enabled' => $syncEnabled]);
+        return (bool)$syncEnabled;
+    }
 
