@@ -75,8 +75,32 @@ class AttendanceController extends Controller
       * GET /iclock/cdata
      * EXPLICIT CONTROL: TimeZone=330 sent ONLY when ZKTECO_AUTO_SYNC_TIME=true in .env   
      */
+//     public function handshake(Request $request)
+//             {
+//         $response = "GET OPTION FROM: {$request->input('SN')}\r\n" .
+//                     "Stamp=9999\r\n" .
+//                     "OpStamp=" . time() . "\r\n" .
+//                     "ErrorDelay=60\r\n" .
+//                     "Delay=30\r\n" .
+//                     "ResLogDay=18250\r\n" .
+//                     "ResLogDelCount=10000\r\n" .
+//                     "ResLogCount=50000\r\n" .
+//                     "TransTimes=00:00;14:05\r\n" .
+//                     "TransInterval=1\r\n" .
+//                     "TransFlag=1111000000\r\n" .
+//                     "Realtime=1\r\n" .
+// "Encrypt=0" .
+//             ($this->shouldSyncDeviceTime() ? "TimeZone=330\r\n" : "");
+//         return response($response, 200)
+//             ->header('Content-Type', 'text/plain');
+//     }
+    
+    
     public function handshake(Request $request)
-            {
+    {
+        // Get current server time in the format ZKTeco expects
+        $serverTime = date('Y-m-d H:i:s');
+
         $response = "GET OPTION FROM: {$request->input('SN')}\r\n" .
                     "Stamp=9999\r\n" .
                     "OpStamp=" . time() . "\r\n" .
@@ -89,8 +113,11 @@ class AttendanceController extends Controller
                     "TransInterval=1\r\n" .
                     "TransFlag=1111000000\r\n" .
                     "Realtime=1\r\n" .
-"Encrypt=0" .
-            ($this->shouldSyncDeviceTime() ? "TimeZone=330\r\n" : "");
+                    "Encrypt=0\r\n" .
+                    // --- TIME OVERRIDE SETTINGS ---
+                    "TimeZone=330\r\n" .             // Force TimeZone to India (+5:30)
+                    "DateTime=" . $serverTime . "\r\n"; // Force device to match server time
+
         return response($response, 200)
             ->header('Content-Type', 'text/plain');
     }
